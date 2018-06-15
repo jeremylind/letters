@@ -1,0 +1,29 @@
+{
+  "name": "red-5-animation",
+  "version": "1.0.0",
+  "description": "Red 5 Design landing page animation",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "webpack -p  --progress --optimize-minimize --config webpack.config.js",
+    "watch": "webpack --watch webpack.config.js",
+    "serve": "webpack-dev-server --open"
+  },
+  "author": "Jeremy Lind",
+  "license": "ISC",
+  "dependencies": {
+    "matter-js": "^0.14.2",
+    "pathseg": "^1.2.0",
+    "poly-decomp": "^0.2.1"
+  },
+  "devDependencies": {
+    "css-loader": "^0.28.11",
+    "extract-text-webpack-plugin": "^4.0.0-beta.0",
+    "node-sass": "^4.9.0",
+    "sass-loader": "^7.0.3",
+    "style-loader": "^0.21.0",
+    "webpack": "^4.12.0",
+    "webpack-cli": "^3.0.3",
+    "webpack-dev-server": "^3.1.4"
+  }
+}
