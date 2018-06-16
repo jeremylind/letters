@@ -1,4 +1,4 @@
-// import decomp from 'poly-decomp';
+import decomp from 'poly-decomp';
 import Pathseg from 'pathseg';
 import Matter from 'matter-js';
 
@@ -15,13 +15,13 @@ var Engine = Matter.Engine,
 	Body = Matter.Body,
 	Vector = Matter.Vector,
 	Vertices = Matter.Vertices,
-	Svg = Matter.Svg;
+	Sleeping = Matter.Sleeping;
 
 
 // App configuration
 var container = window.document.getElementById('canvas');
-var canvasWidth = container.clientWidth;
-var canvasHeight = container.clientHeight;
+export var canvasWidth = container.clientWidth;
+export var canvasHeight = container.clientHeight;
 var pixelRatio = window.devicePixelRatio;
 var letterFlytime = 45;
 var letterHangtime = 180,
@@ -65,7 +65,7 @@ window.addEventListener('resize', function(e) {
 		render.context = null;
 		render.textures = {};
 
-		init();
+		lettersInit();
 	          
 	}, 250);
 });
@@ -111,7 +111,7 @@ function pathE (x, y) {
 	]
 	var pathE = Body.create({
 		parts: verticiesE,
-		label: 'E'
+		label: Common.choose(['E', 'E1'])
 	});
 	return pathE;
 }
@@ -215,21 +215,17 @@ function restoreLetter(letter, letterMass, letterInertia) {
 }
 
 function letterSelect(mousePosition) {
-	var word = 'AWESOME'.split('');
+	var word = ['A', 'W', 'E', 'S', 'O', 'M', 'E1']
 	var awesome = [];
-	var firstE = true;
 	word.forEach(function(letter, i) {
 
 		var letterSet = letters.bodies.filter(function(value) {
-			return value.label == letter;
+			if (value.label == letter && value.isStatic === false) {
+				return true;
+			}
+			return false;
 		});
 		var randomLetter = letterSet[Math.floor(Math.random() * (letterSet.length))];
-		if (randomLetter.label == 'E' && firstE == true) {
-			firstE = false;
-		} else if (randomLetter.label == 'E' && firstE != true) {
-			randomLetter.label = 'E1';
-			firstE = true;
-		}
 		awesome.push(randomLetter);
 	});
 
@@ -260,6 +256,7 @@ function getLetterOffset(label) {
 }
 
 function letterControl(mousePosition, letter) {
+	Sleeping.set(letter, false);
 	var letterPosition = {x: letter.position.x, y: letter.position.y };
 	var letterMass = letter.mass;
 	var letterInertia = letter.inertia;
@@ -267,7 +264,6 @@ function letterControl(mousePosition, letter) {
 	var letterLabel = letter.label;
 	var letterOffset = getLetterOffset(letterLabel);
 	var mousePositionOffset = mousePosition.x + letterOffset.x;
-
 	var counter = 0;
 
 	Body.setStatic(letter, true);
@@ -286,6 +282,12 @@ function letterControl(mousePosition, letter) {
 			restoreLetter(letter, letterMass, letterInertia);
 		}, (letterHangtime * 10));
 	});
+	container.addEventListener('click', letterClick);
+}
+
+var letterClick = function (e) {
+	container.removeEventListener('click', letterClick);
+	letterSelect({x: e.pageX - this.offsetLeft, y: e.pageY - this.offsetTop});
 }
 
 export default function lettersInit() {
@@ -301,41 +303,23 @@ export default function lettersInit() {
 			wireframes: false,
 			showSleeping: false,
 			pixelRatio: pixelRatio,
-			background: '#fff'
+			background: 'transparent'
 		}
 	});
 
 	// Sizing for letter composite
-	var letterCount = (canvasWidth / 100) * 20;
+	var letterCount = Math.min((canvasWidth / 100) * 20, 225);
 	letterRows = Math.round(Math.sqrt(letterCount));
 
 	// create static objects
 	var ground = Bodies.rectangle(canvasWidth / 2, canvasHeight + 5, canvasWidth, 10, { isStatic: true });
-	var leftWall = Bodies.rectangle(-5, canvasHeight * 2.5, 10, canvasHeight * 5, { isStatic: true });
+	var leftWall = Bodies.rectangle(-5, canvasHeight * 2.5, 5, canvasHeight * 5, { isStatic: true });
 	Body.rotate(leftWall, -0.261799, {x: 0, y: canvasHeight});
-	var rightWall = Bodies.rectangle(canvasWidth, canvasHeight * 2.5, 10, canvasHeight * 5, { isStatic: true });
+	var rightWall = Bodies.rectangle(canvasWidth, canvasHeight * 2.5, 1, canvasHeight * 5, { isStatic: true });
 	Body.rotate(rightWall, 0.261799, {x: canvasWidth, y: canvasHeight});
 	letters = makeLetters();
 
-	// add mouse control and make the mouse revolute
-	var mouse = Mouse.create(render.canvas),
-		mouseConstraint = MouseConstraint.create(engine, {
-			mouse: mouse,
-			constraint: {
-				stiffness: 0,
-				render: {
-					visible: false
-				}
-			}
-		});
-
-	// Remove mousewheel events. They aren't needed for physics and allow normal page scrolling
-	mouse.element.removeEventListener("mousewheel", mouse.mousewheel);
-	mouse.element.removeEventListener("DOMMouseScroll", mouse.mousewheel);
-
-	Events.on(mouseConstraint, 'mousedown', function(event) {
-		letterSelect({x: event.mouse.position.x, y: event.mouse.position.y});
-	});
+	container.addEventListener('click', letterClick);
 
 	function repelLetters(mouseLocation) {
 		letters.bodies.forEach( function(ball) {
@@ -346,13 +330,13 @@ export default function lettersInit() {
 		});
 	}
 
-	render.canvas.addEventListener('mousemove', function() {
-		var mouseLocation = mouse.position;
+	container.addEventListener('mousemove', function(e) {
+		var mouseLocation = {x: e.pageX - this.offsetLeft, y: e.pageY - this.offsetTop};
 		repelLetters(mouseLocation);
 	});
 
-	render.canvas.addEventListener('touchmove', function() {
-		var mouseLocation = mouse.position;
+	container.addEventListener('touchmove', function(e) {
+		var mouseLocation = {x: e.pageX - this.offsetLeft, y: e.pageY - this.offsetTop};
 		repelLetters(mouseLocation);
 	});
 
@@ -360,12 +344,12 @@ export default function lettersInit() {
 	// 	letterSelect({x: event.x, y: event.y});
 	// });
 
-
+	World.bounds = {min: { x: -Infinity, y: -Infinity }, max: { x: canvasWidth * 2, y: canvasHeight * 2 }}
 	// add all of the bodies to the world
-	World.add(engine.world, [ground, leftWall, rightWall, letters, mouseConstraint]);
+	World.add(engine.world, [ground, leftWall, rightWall, letters]);
 
 	// keep the mouse in sync with rendering
-	render.mouse = mouse;
+	// render.mouse = mouse;
 
 	// run the engine
 	Engine.run(engine);
