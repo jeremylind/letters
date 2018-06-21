@@ -20,8 +20,14 @@ var Engine = Matter.Engine,
 
 // App configuration
 var container = window.document.getElementById('canvas');
-export var canvasWidth = container.clientWidth;
-export var canvasHeight = container.clientHeight;
+// export var canvasWidth = container.clientWidth;
+// export var canvasHeight = container.clientHeight;
+export var canvasWidth = window.innerWidth
+|| document.documentElement.clientWidth
+|| document.body.clientWidth;
+export var canvasHeight = window.innerHeight
+|| document.documentElement.clientHeight
+|| document.body.clientHeight;
 var pixelRatio = window.devicePixelRatio;
 var letterFlytime = 45;
 var letterHangtime = 180,
@@ -312,10 +318,15 @@ export default function lettersInit() {
 	letterRows = Math.round(Math.sqrt(letterCount));
 
 	// create static objects
-	var ground = Bodies.rectangle(canvasWidth / 2, canvasHeight + 5, canvasWidth, 10, { isStatic: true });
-	var leftWall = Bodies.rectangle(-5, canvasHeight * 2.5, 5, canvasHeight * 5, { isStatic: true });
+	var wallOptions = {
+		fillStyle: 'transparent',
+		lineWidth: false,
+		strokeStyle: 'transparent',
+	}
+	var ground = Bodies.rectangle(canvasWidth / 2, canvasHeight + 5, canvasWidth, 10, { isStatic: true, render: wallOptions });
+	var leftWall = Bodies.rectangle(-5, canvasHeight * 2.5, 5, canvasHeight * 5, { isStatic: true, render: wallOptions });
 	Body.rotate(leftWall, -0.261799, {x: 0, y: canvasHeight});
-	var rightWall = Bodies.rectangle(canvasWidth, canvasHeight * 2.5, 1, canvasHeight * 5, { isStatic: true });
+	var rightWall = Bodies.rectangle(canvasWidth, canvasHeight * 2.5, 1, canvasHeight * 5, { isStatic: true, render: wallOptions });
 	Body.rotate(rightWall, 0.261799, {x: canvasWidth, y: canvasHeight});
 	letters = makeLetters();
 
